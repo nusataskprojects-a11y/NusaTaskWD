@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>NusaTask - Withdraw</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gradient-to-r from-blue-50 to-blue-100 min-h-screen flex items-center justify-center">
+
+  <!-- 🔹 Notifikasi -->
+  <div id="notif" class="hidden fixed top-5 right-5 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-opacity duration-500"></div>
+
+  <!-- 🔹 Login Page -->
+  <div id="loginPage" class="w-full max-w-sm bg-white p-6 rounded-2xl shadow-xl">
+    <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">NusaTask - Login</h1>
+    <input id="email" type="email" placeholder="Email" class="w-full border rounded-lg px-3 py-2 mb-3 focus:outline-blue-500" />
+    <input id="password" type="password" placeholder="Password" class="w-full border rounded-lg px-3 py-2 mb-4 focus:outline-blue-500" />
+    <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg mb-2">Login</button>
+    <button onclick="register()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg">Daftar</button>
+  </div>
+
+  <!-- 🔹 Dashboard WD -->
+  <div id="dashboard" class="hidden w-full max-w-md bg-white p-6 rounded-2xl shadow-xl">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-xl font-bold text-blue-600">NusaTask – Withdraw</h1>
+      <button onclick="logout()" class="text-sm text-red-500">Logout</button>
+    </div>
+
+    <!-- Saldo -->
+    <div class="bg-blue-600 p-6 rounded-xl text-center text-white mb-6 shadow">
+      <p class="text-sm">Saldo Anda</p>
+      <p id="saldo" class="text-3xl font-bold">Rp0</p>
+    </div>
+
+    <!-- Form WD -->
+    <h2 class="font-semibold mb-3">Ajukan Withdraw</h2>
+    <select id="method" class="w-full border rounded-lg px-3 py-2 mb-3 focus:outline-blue-500">
+      <option value="Dana">Dana</option>
+      <option value="OVO">OVO</option>
+      <option value="GoPay">GoPay</option>
+      <option value="ShopeePay">ShopeePay</option>
+    </select>
+    <input id="number" type="text" placeholder="Nomor E-Wallet" class="w-full border rounded-lg px-3 py-2 mb-3 focus:outline-blue-500" />
+    <input id="amount" type="number" placeholder="Jumlah (Rp)" class="w-full border rounded-lg px-3 py-2 mb-3 focus:outline-blue-500" />
+    <button id="btnWD" onclick="withdraw()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg mb-3">Ajukan WD</button>
+    <p class="text-xs text-gray-500 mb-6">Minimal Rp30.000</p>
+
+    <!-- Riwayat WD -->
+    <h2 class="font-semibold mb-3">Riwayat Withdraw</h2>
+    <div id="history" class="space-y-2 max-h-60 overflow-y-auto text-sm"></div>
+  </div>
+
+  <script>
+    // 🔹 Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCrFmaHbmL299cum51EtJIjt5NpukpTmho",
+      authDomain: "penyimpanansaldo-280df.firebaseapp.com",
+      databaseURL: "https://penyimpanansaldo-280df-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "penyimpanansaldo-280df",
+      storageBucket: "penyimpanansaldo-280df.firebasestorage.app",
+      messagingSenderId: "659609775130",
+      appId: "1:659609775130:web:bdd088ca5a877498c5b5a3",
+      measurementId: "G-L4TW7E23H2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    let currentUser = null;
+    let currentSaldo = 0;
+
+    // 🔹 Telegram Bot Config
+    const BOT_TOKEN = "8236562243:AAFIyLCk2fu9-4GxxYSuIoSKw9DEiv1DVko";
+    const CHAT_ID   = "8322802091";
+
+    // 🔹 Notifikasi dengan ikon
+    function showNotif(message, type = "error") {
+      const notif = document.getElementById("notif");
+      let icon = "❌"; // default error
+      notif.className = "fixed top-5 right-5 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-opacity duration-500";
+
+      if (type === "error") {
+        icon = "❌";
+        notif.classList.add("bg-red-500", "text-white");
+      }
+      if (type === "success") {
+        icon = "✅";
+        notif.classList.add("bg-green-500", "text-white");
+      }
+      if (type === "info") {
+        icon = "ℹ️";
+        notif.classList.add("bg-blue-500", "text-white");
+      }
+
+      notif.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+      notif.classList.remove("hidden");
+      notif.style.opacity = "1";
+
+      setTimeout(() => {
+        notif.style.opacity = "0";
+        setTimeout(() => notif.classList.add("hidden"), 500);
+      }, 3000);
+    }
+
+    // 🔹 Auto Login
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        showDashboard();
+        loadSaldo();
+        loadHistory();
+      } else {
+        currentUser = null;
+        showLogin();
+      }
+    });
+
+    function showLogin() {
+      document.getElementById("loginPage").classList.remove("hidden");
+      document.getElementById("dashboard").classList.add("hidden");
+    }
+
+    function showDashboard() {
+      document.getElementById("loginPage").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+    }
+
+    // 🔹 Auth
+    function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => showNotif("Login berhasil!", "success"))
+        .catch(err => showNotif(err.message, "error"));
+    }
+
+    function register() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => showNotif("Akun berhasil dibuat!", "success"))
+        .catch(err => showNotif(err.message, "error"));
+    }
+
+    function logout() {
+      auth.signOut();
+      showNotif("Berhasil logout!", "info");
+    }
+
+    // 🔹 Saldo
+    function loadSaldo() {
+      const ref = db.ref("users/" + currentUser.uid + "/saldo");
+      ref.on("value", snap => {
+        currentSaldo = snap.val() || 0;
+        document.getElementById("saldo").textContent = "Rp" + currentSaldo.toLocaleString();
+      });
+    }
+
+    // 🔹 Withdraw + Kirim Telegram
+    function withdraw() {
+      const method = document.getElementById("method").value;
+      const number = document.getElementById("number").value;
+      const amount = parseInt(document.getElementById("amount").value);
+
+      if (amount < 30000) {
+        showNotif("Minimal WD Rp30.000", "error");
+        return;
+      }
+
+      if (currentSaldo < amount) {
+        showNotif("Saldo tidak cukup!", "error");
+        return;
+      }
+
+      const saldoRef = db.ref("users/" + currentUser.uid + "/saldo");
+      saldoRef.transaction(saldo => {
+        if (!saldo) saldo = 0;
+        if (saldo >= amount) {
+          const reqId = db.ref().push().key;
+          const wdData = {
+            amount,
+            method,
+            number,
+            status: "pending",
+            ts: Date.now()
+          };
+          db.ref("withdrawals/" + currentUser.uid + "/" + reqId).set(wdData);
+
+          // 🔹 Kirim ke Telegram
+          const text = `🔔 WD Baru\nUID: ${currentUser.uid}\nEmail: ${currentUser.email}\nJumlah: Rp${amount.toLocaleString()}\nMetode: ${method}\nNomor: ${number}\nStatus: pending`;
+
+          fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: CHAT_ID, text })
+          });
+
+          showNotif("WD berhasil diajukan!", "success");
+          return saldo - amount;
+        }
+        return saldo;
+      });
+    }
+
+    // 🔹 Riwayat WD
+    function loadHistory() {
+      const ref = db.ref("withdrawals/" + currentUser.uid);
+      ref.on("value", snap => {
+        const historyDiv = document.getElementById("history");
+        historyDiv.innerHTML = "";
+        snap.forEach(child => {
+          const d = child.val();
+          let color = "text-yellow-600";
+          if (d.status === "success") color = "text-green-600";
+          if (d.status === "rejected") color = "text-red-600";
+          const item = `
+            <div class="border p-3 rounded-lg flex justify-between items-center">
+              <span>Rp${d.amount.toLocaleString()} | ${d.method}<br><span class="text-gray-500">${d.number}</span></span>
+              <span class="${color} font-semibold">${d.status}</span>
+            </div>`;
+          historyDiv.innerHTML = item + historyDiv.innerHTML;
+        });
+      });
+    }
+  </script>
+</body>
+</html>
