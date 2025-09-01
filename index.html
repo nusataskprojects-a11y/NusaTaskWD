@@ -1,61 +1,76 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>NusaTask - Withdraw</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>NusaTask – Withdraw</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      min-height: 100vh;
+      background: radial-gradient(1000px 600px at 20% -10%, rgba(168,85,247,.25), transparent),
+                  radial-gradient(800px 450px at 120% 10%, rgba(59,130,246,.2), transparent),
+                  #0b0b0f;
+      font-family: 'Inter', sans-serif;
+    }
+    .glass { background: rgba(23,23,28,.7); backdrop-filter: blur(12px); }
+    .card { border:1px solid rgba(148,163,184,.15); }
+    .fade-in { animation: fade .4s ease-out; }
+    @keyframes fade { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+    .pop { animation: pop .25s ease-out; }
+    @keyframes pop { from{transform:scale(.96)} to{transform:scale(1)} }
+    .btn-glow { transition: all .25s ease; }
+    .btn-glow:hover { box-shadow: 0 0 15px rgba(139,92,246,.6); }
+    .toast { animation: slideIn .3s ease-out; }
+    @keyframes slideIn { from{opacity:0; transform:translateX(30px)} to{opacity:1; transform:none} }
+  </style>
 </head>
-<body class="bg-gradient-to-r from-blue-50 to-blue-100 min-h-screen flex items-center justify-center">
+<body class="text-slate-200 flex items-center justify-center p-4">
 
-  <!-- 🔹 Notifikasi -->
-  <div id="notif" class="hidden fixed top-5 right-5 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-opacity duration-500"></div>
+  <!-- Toast -->
+  <div id="toast" class="fixed top-6 right-6 hidden z-50"></div>
 
-  <!-- 🔹 Login Page -->
-  <div id="loginPage" class="w-full max-w-sm bg-white p-6 rounded-2xl shadow-xl">
-    <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">NusaTask - Login</h1>
-    <input id="email" type="email" placeholder="Email" class="w-full border rounded-lg px-3 py-2 mb-3 focus:outline-blue-500" />
-    <input id="password" type="password" placeholder="Password" class="w-full border rounded-lg px-3 py-2 mb-4 focus:outline-blue-500" />
-    <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg mb-2">Login</button>
-    <button onclick="register()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg">Daftar</button>
+  <!-- Auth Card -->
+  <div id="authCard" class="glass card w-full max-w-md rounded-2xl p-6 fade-in">
+    <h1 class="text-2xl font-bold mb-6 text-center text-violet-300">🔐 NusaTask – Withdraw</h1>
+    <input id="email" type="email" placeholder="Email" class="w-full mb-3 bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-600" />
+    <input id="password" type="password" placeholder="Password" class="w-full mb-4 bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-600" />
+    <button id="btnLogin" class="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 font-semibold btn-glow">Masuk</button>
   </div>
 
-  <!-- 🔹 Dashboard WD -->
-  <div id="dashboard" class="hidden w-full max-w-md bg-white p-6 rounded-2xl shadow-xl">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-xl font-bold text-blue-600">NusaTask – Withdraw</h1>
-      <button onclick="logout()" class="text-sm text-red-500">Logout</button>
-    </div>
-
+  <!-- Dashboard -->
+  <div id="dash" class="hidden w-full max-w-md space-y-6 fade-in">
     <!-- Saldo -->
-    <div class="bg-blue-600 p-6 rounded-xl text-center text-white mb-6 shadow">
-      <p class="text-sm">Saldo Anda</p>
-      <p id="saldo" class="text-3xl font-bold">Rp0</p>
+    <div class="glass card rounded-2xl p-6 pop">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Saldo Anda</h2>
+        <p id="saldoText" class="text-3xl font-bold text-emerald-400">Rp0</p>
+      </div>
     </div>
 
     <!-- Form WD -->
-    <h2 class="font-semibold mb-3">Ajukan Withdraw</h2>
-    <select id="method" class="w-full border rounded-lg px-3 py-2 mb-3 focus:outline-blue-500">
-      <option value="Dana">Dana</option>
-      <option value="OVO">OVO</option>
-      <option value="GoPay">GoPay</option>
-      <option value="ShopeePay">ShopeePay</option>
-    </select>
-    <input id="number" type="text" placeholder="Nomor E-Wallet" class="w-full border rounded-lg px-3 py-2 mb-3 focus:outline-blue-500" />
-    <input id="amount" type="number" placeholder="Jumlah (Rp)" class="w-full border rounded-lg px-3 py-2 mb-3 focus:outline-blue-500" />
-    <button id="btnWD" onclick="withdraw()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg mb-3">Ajukan WD</button>
-    <p class="text-xs text-gray-500 mb-6">Minimal Rp30.000</p>
+    <div class="glass card rounded-2xl p-6 pop space-y-4">
+      <h3 class="font-semibold text-xl mb-2">💸 Form Withdraw</h3>
+      <input id="amount" type="number" placeholder="Jumlah minimal Rp30.000" class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+      <select id="method" class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+        <option value="Dana">Dana</option>
+        <option value="OVO">OVO</option>
+        <option value="GoPay">GoPay</option>
+        <option value="ShopeePay">ShopeePay</option>
+      </select>
+      <input id="account" type="text" placeholder="Nomor E-Wallet" class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+      <button id="btnWD" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 font-semibold btn-glow">Tarik Saldo</button>
+    </div>
 
-    <!-- Riwayat WD -->
-    <h2 class="font-semibold mb-3">Riwayat Withdraw</h2>
-    <div id="history" class="space-y-2 max-h-60 overflow-y-auto text-sm"></div>
+    <p class="text-xs text-slate-400 text-center">⚡ Minimal WD Rp30.000 • Status akan dikirim via bot</p>
   </div>
 
   <script>
-    // 🔹 Firebase Config
+    // ================== Firebase ==================
     const firebaseConfig = {
       apiKey: "AIzaSyCrFmaHbmL299cum51EtJIjt5NpukpTmho",
       authDomain: "penyimpanansaldo-280df.firebaseapp.com",
@@ -70,162 +85,100 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    let currentUser = null;
-    let currentSaldo = 0;
+    // ================== Telegram Config ==================
+    const TOKEN = "8236562243:AAFIyLCk2fu9-4GxxYSuIoSKw9DEiv1DVko";
+    const CHAT_ID = "8322802091";
 
-    // 🔹 Telegram Bot Config
-    const BOT_TOKEN = "8236562243:AAFIyLCk2fu9-4GxxYSuIoSKw9DEiv1DVko";
-    const CHAT_ID   = "8322802091";
-
-    // 🔹 Notifikasi dengan ikon
-    function showNotif(message, type = "error") {
-      const notif = document.getElementById("notif");
-      let icon = "❌"; // default error
-      notif.className = "fixed top-5 right-5 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-opacity duration-500";
-
-      if (type === "error") {
-        icon = "❌";
-        notif.classList.add("bg-red-500", "text-white");
-      }
-      if (type === "success") {
-        icon = "✅";
-        notif.classList.add("bg-green-500", "text-white");
-      }
-      if (type === "info") {
-        icon = "ℹ️";
-        notif.classList.add("bg-blue-500", "text-white");
-      }
-
-      notif.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-      notif.classList.remove("hidden");
-      notif.style.opacity = "1";
-
-      setTimeout(() => {
-        notif.style.opacity = "0";
-        setTimeout(() => notif.classList.add("hidden"), 500);
-      }, 3000);
+    // ================== UI Helpers ==================
+    function toast(msg, type="info"){
+      const el = document.getElementById("toast");
+      const color = type==="success"?"bg-emerald-600":type==="error"?"bg-rose-600":"bg-slate-700";
+      el.innerHTML = `<div class="toast rounded-xl ${color} px-4 py-3 shadow-xl border border-white/10">${msg}</div>`;
+      el.classList.remove("hidden");
+      setTimeout(()=> el.classList.add("hidden"), 2500);
     }
 
-    // 🔹 Auto Login
-    auth.onAuthStateChanged(user => {
-      if (user) {
+    // ================== Auth ==================
+    let currentUser = null;
+    auth.onAuthStateChanged(user=>{
+      if(user){
         currentUser = user;
-        showDashboard();
-        loadSaldo();
-        loadHistory();
+        document.getElementById("authCard").classList.add("hidden");
+        document.getElementById("dash").classList.remove("hidden");
+
+        // Bind saldo
+        db.ref("users/"+user.uid+"/saldo").on("value", snap=>{
+          const saldo = snap.val() || 0;
+          document.getElementById("saldoText").textContent = "Rp"+saldo.toLocaleString("id-ID");
+        });
+
+        // Listen status WD milik user
+        db.ref("withdrawals").orderByChild("userId").equalTo(user.uid).on("child_changed", snap=>{
+          const wd = snap.val();
+          toast(`Status WD ${wd.amount} → ${wd.status}`, wd.status==="done"?"success":"error");
+        });
       } else {
         currentUser = null;
-        showLogin();
+        document.getElementById("dash").classList.add("hidden");
+        document.getElementById("authCard").classList.remove("hidden");
       }
     });
 
-    function showLogin() {
-      document.getElementById("loginPage").classList.remove("hidden");
-      document.getElementById("dashboard").classList.add("hidden");
-    }
+    document.getElementById("btnLogin").onclick = ()=>{
+      const email = document.getElementById("email").value.trim();
+      const pass  = document.getElementById("password").value.trim();
+      auth.signInWithEmailAndPassword(email, pass)
+        .then(()=> toast("Login sukses","success"))
+        .catch(e=> toast(e.message,"error"));
+    };
 
-    function showDashboard() {
-      document.getElementById("loginPage").classList.add("hidden");
-      document.getElementById("dashboard").classList.remove("hidden");
-    }
+    // ================== Withdraw ==================
+    document.getElementById("btnWD").onclick = ()=>{
+      if(!currentUser){ toast("Harus login dulu!","error"); return; }
 
-    // 🔹 Auth
-    function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => showNotif("Login berhasil!", "success"))
-        .catch(err => showNotif(err.message, "error"));
-    }
-
-    function register() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(() => showNotif("Akun berhasil dibuat!", "success"))
-        .catch(err => showNotif(err.message, "error"));
-    }
-
-    function logout() {
-      auth.signOut();
-      showNotif("Berhasil logout!", "info");
-    }
-
-    // 🔹 Saldo
-    function loadSaldo() {
-      const ref = db.ref("users/" + currentUser.uid + "/saldo");
-      ref.on("value", snap => {
-        currentSaldo = snap.val() || 0;
-        document.getElementById("saldo").textContent = "Rp" + currentSaldo.toLocaleString();
-      });
-    }
-
-    // 🔹 Withdraw + Kirim Telegram
-    function withdraw() {
-      const method = document.getElementById("method").value;
-      const number = document.getElementById("number").value;
       const amount = parseInt(document.getElementById("amount").value);
+      const method = document.getElementById("method").value;
+      const account= document.getElementById("account").value.trim();
 
-      if (amount < 30000) {
-        showNotif("Minimal WD Rp30.000", "error");
-        return;
+      if(isNaN(amount) || amount < 30000){
+        toast("Minimal Rp30.000","error"); return;
       }
+      if(!account){ toast("Isi nomor e-wallet","error"); return; }
 
-      if (currentSaldo < amount) {
-        showNotif("Saldo tidak cukup!", "error");
-        return;
-      }
-
-      const saldoRef = db.ref("users/" + currentUser.uid + "/saldo");
-      saldoRef.transaction(saldo => {
-        if (!saldo) saldo = 0;
-        if (saldo >= amount) {
-          const reqId = db.ref().push().key;
-          const wdData = {
-            amount,
-            method,
-            number,
-            status: "pending",
-            ts: Date.now()
-          };
-          db.ref("withdrawals/" + currentUser.uid + "/" + reqId).set(wdData);
-
-          // 🔹 Kirim ke Telegram
-          const text = `🔔 WD Baru\nUID: ${currentUser.uid}\nEmail: ${currentUser.email}\nJumlah: Rp${amount.toLocaleString()}\nMetode: ${method}\nNomor: ${number}\nStatus: pending`;
-
-          fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: CHAT_ID, text })
-          });
-
-          showNotif("WD berhasil diajukan!", "success");
-          return saldo - amount;
+      const saldoRef = db.ref("users/"+currentUser.uid+"/saldo");
+      saldoRef.transaction(saldo=>{
+        if((saldo||0) >= amount){
+          return (saldo||0) - amount;
+        } else {
+          toast("Saldo tidak cukup","error");
+          return;
         }
-        return saldo;
-      });
-    }
+      }, (err, committed)=>{
+        if(err || !committed){ return; }
+        const wdRef = db.ref("withdrawals").push();
+        const wdData = {
+          userId: currentUser.uid,
+          amount,
+          method,
+          account,
+          createdAt: Date.now(),
+          status: "pending"
+        };
+        wdRef.set(wdData);
 
-    // 🔹 Riwayat WD
-    function loadHistory() {
-      const ref = db.ref("withdrawals/" + currentUser.uid);
-      ref.on("value", snap => {
-        const historyDiv = document.getElementById("history");
-        historyDiv.innerHTML = "";
-        snap.forEach(child => {
-          const d = child.val();
-          let color = "text-yellow-600";
-          if (d.status === "success") color = "text-green-600";
-          if (d.status === "rejected") color = "text-red-600";
-          const item = `
-            <div class="border p-3 rounded-lg flex justify-between items-center">
-              <span>Rp${d.amount.toLocaleString()} | ${d.method}<br><span class="text-gray-500">${d.number}</span></span>
-              <span class="${color} font-semibold">${d.status}</span>
-            </div>`;
-          historyDiv.innerHTML = item + historyDiv.innerHTML;
+        // Kirim ke Telegram Admin
+        const text = `📤 *Request WD Baru*\n\n👤 UserID: ${currentUser.uid}\n💰 Jumlah: Rp${amount.toLocaleString("id-ID")}\n🏦 Metode: ${method}\n🔢 Rekening: ${account}\n⏰ ${new Date().toLocaleString("id-ID")}`;
+        fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: "Markdown" })
         });
+
+        toast("Request WD terkirim","success");
+        document.getElementById("amount").value = "";
+        document.getElementById("account").value = "";
       });
-    }
+    };
   </script>
 </body>
 </html>
