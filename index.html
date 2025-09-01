@@ -1,213 +1,178 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>NusaTask – Withdraw</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <meta charset="UTF-8">
+  <title>NusaTask - Withdraw</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    :root { color-scheme: dark; }
     body {
-      min-height: 100vh;
-      background: radial-gradient(1000px 600px at 20% -10%, rgba(168,85,247,.25), transparent),
-                  radial-gradient(800px 450px at 120% 10%, rgba(59,130,246,.2), transparent),
-                  #0b0b0f;
-      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: white; font-family: "Poppins", sans-serif; text-align: center;
+      margin: 0; padding: 0;
     }
-    .glass { background: rgba(23,23,28,.7); backdrop-filter: blur(12px); }
-    .card { border:1px solid rgba(148,163,184,.15); }
-    .fade-in { animation: fade .4s ease-out; }
-    @keyframes fade { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
-    .pop { animation: pop .25s ease-out; }
-    @keyframes pop { from{transform:scale(.95)} to{transform:scale(1)} }
-    .btn-glow { transition: all .25s ease; }
-    .btn-glow:hover { box-shadow: 0 0 15px rgba(139,92,246,.6); }
-    .toast { animation: slideIn .3s ease-out; }
-    @keyframes slideIn { from{opacity:0; transform:translateX(30px)} to{opacity:1; transform:none} }
+    .container { padding: 20px; }
+    .card {
+      background: rgba(255,255,255,0.08);
+      padding: 20px; margin: 20px auto; border-radius: 15px;
+      max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      backdrop-filter: blur(6px);
+      animation: fadeIn 0.8s ease-in-out;
+    }
+    h2 { margin-bottom: 10px; }
+    input, select, button {
+      width: 90%; padding: 12px; margin: 10px 0; border: none; border-radius: 8px;
+      font-size: 14px;
+    }
+    input, select {
+      background: rgba(255,255,255,0.1); color: white;
+    }
+    input::placeholder { color: #aaa; }
+    button {
+      background: #00c853; color: white; font-weight: bold; cursor: pointer;
+      transition: 0.3s; font-size: 15px;
+    }
+    button:hover { background: #009624; transform: scale(1.05); }
+    ul { text-align: left; padding: 0; }
+    li {
+      list-style: none; padding: 8px; margin: 5px 0;
+      background: rgba(0,0,0,0.3); border-radius: 8px;
+      animation: slideIn 0.5s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
   </style>
 </head>
-<body class="text-slate-200 flex items-center justify-center p-4">
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>💰 Withdraw Saldo</h2>
+      <p>Total Saldo: <span id="saldoTotal">Rp0</span></p>
 
-  <!-- Toast -->
-  <div id="toast" class="fixed top-6 right-6 hidden z-50"></div>
-
-  <!-- Auth Card -->
-  <div id="authCard" class="glass card w-full max-w-md rounded-2xl p-6 fade-in">
-    <h1 class="text-2xl font-bold mb-6 text-center text-violet-300">🔐 NusaTask – Withdraw</h1>
-    <input id="email" type="email" placeholder="Email" class="w-full mb-3 bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-600" />
-    <input id="password" type="password" placeholder="Password" class="w-full mb-4 bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-600" />
-    <button id="btnLogin" class="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 font-semibold btn-glow">Masuk</button>
-  </div>
-
-  <!-- Dashboard -->
-  <div id="dash" class="hidden w-full max-w-md space-y-6 fade-in">
-    <!-- Header -->
-    <div class="text-center space-y-1">
-      <h2 class="text-3xl font-bold text-violet-300">💎 NusaTask</h2>
-      <p class="text-slate-400">Panel Penarikan Saldo</p>
-    </div>
-
-    <!-- Saldo -->
-    <div class="glass card rounded-2xl p-6 pop text-center">
-      <p class="text-lg text-slate-300">Saldo Anda</p>
-      <p id="saldoText" class="text-4xl font-bold text-emerald-400 mt-2">Rp0</p>
-    </div>
-
-    <!-- Form WD -->
-    <div class="glass card rounded-2xl p-6 pop space-y-4">
-      <h3 class="font-semibold text-xl mb-2">💸 Form Withdraw</h3>
-      <input id="amount" type="number" placeholder="Jumlah minimal Rp30.000" class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-600" />
-      <select id="method" class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+      <select id="method">
         <option value="Dana">Dana</option>
         <option value="OVO">OVO</option>
-        <option value="GoPay">GoPay</option>
+        <option value="Gopay">Gopay</option>
         <option value="ShopeePay">ShopeePay</option>
+        <option value="Bank">Bank Transfer</option>
       </select>
-      <input id="account" type="text" placeholder="Nomor E-Wallet" class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-600" />
-      <button id="btnWD" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 font-semibold btn-glow">Tarik Saldo</button>
+
+      <input type="text" id="account" placeholder="Nomor Dana/Bank">
+      <input type="number" id="amount" placeholder="Minimal Rp30.000">
+
+      <button onclick="requestWD()">Ajukan WD</button>
     </div>
 
-    <!-- Riwayat WD -->
-    <div class="glass card rounded-2xl p-6 space-y-4 fade-in">
-      <h3 class="font-semibold text-xl mb-3">📜 Riwayat Withdraw</h3>
-      <div id="history" class="space-y-3 text-sm"></div>
+    <div class="card">
+      <h2>📜 Riwayat WD</h2>
+      <ul id="riwayatWD"><li>Belum ada data</li></ul>
     </div>
-
-    <p class="text-xs text-slate-400 text-center">⚡ Minimal WD Rp30.000 • Status akan dikirim via bot</p>
   </div>
 
-  <script>
-    // ================== Firebase ==================
-    const firebaseConfig = {
-      apiKey: "AIzaSyCrFmaHbmL299cum51EtJIjt5NpukpTmho",
-      authDomain: "penyimpanansaldo-280df.firebaseapp.com",
-      databaseURL: "https://penyimpanansaldo-280df-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "penyimpanansaldo-280df",
-      storageBucket: "penyimpanansaldo-280df.firebasestorage.app",
-      messagingSenderId: "659609775130",
-      appId: "1:659609775130:web:bdd088ca5a877498c5b5a3",
-      measurementId: "G-L4TW7E23H2"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
+<script>
+  // 🔥 Firebase Config (punya kamu)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCrFmaHbmL299cum51EtJIjt5NpukpTmho",
+    authDomain: "penyimpanansaldo-280df.firebaseapp.com",
+    databaseURL: "https://penyimpanansaldo-280df-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "penyimpanansaldo-280df",
+    storageBucket: "penyimpanansaldo-280df.firebasestorage.app",
+    messagingSenderId: "659609775130",
+    appId: "1:659609775130:web:bdd088ca5a877498c5b5a3",
+    measurementId: "G-L4TW7E23H2"
+  };
+  firebase.initializeApp(firebaseConfig);
 
-    // ================== Telegram Config ==================
-    const TOKEN = "8236562243:AAFIyLCk2fu9-4GxxYSuIoSKw9DEiv1DVko";
-    const CHAT_ID = "8322802091";
+  const db = firebase.database();
+  const userId = "UID_USER_AKTIF"; // nanti diambil dari login auth
 
-    // ================== UI Helpers ==================
-    function toast(msg, type="info"){
-      const el = document.getElementById("toast");
-      const color = type==="success"?"bg-emerald-600":type==="error"?"bg-rose-600":"bg-slate-700";
-      el.innerHTML = `<div class="toast rounded-xl ${color} px-4 py-3 shadow-xl border border-white/10">${msg}</div>`;
-      el.classList.remove("hidden");
-      setTimeout(()=> el.classList.add("hidden"), 2500);
+  // 🔄 Hitung saldo gabungan
+  function loadSaldo() {
+    db.ref("users/" + userId).on("value", snap => {
+      const d = snap.val() || {};
+      let total = (d.saldoBot1||0)+(d.saldoBot2||0)+(d.saldoBot3||0)+(d.saldoBot4||0)+(d.saldoBot5||0);
+      db.ref("users/" + userId + "/totalSaldo").set(total);
+      document.getElementById("saldoTotal").innerText = "Rp" + total.toLocaleString();
+    });
+  }
+
+  // 🚀 Ajukan WD
+  function requestWD() {
+    const method = document.getElementById("method").value;
+    const account = document.getElementById("account").value.trim();
+    const amount = parseInt(document.getElementById("amount").value);
+
+    if(!account) {
+      Swal.fire("❌ Gagal", "Nomor akun wajib diisi", "error");
+      return;
     }
 
-    // ================== Auth ==================
-    let currentUser = null;
-    auth.onAuthStateChanged(user=>{
-      if(user){
-        currentUser = user;
-        document.getElementById("authCard").classList.add("hidden");
-        document.getElementById("dash").classList.remove("hidden");
+    db.ref("users/" + userId).once("value").then(snapshot => {
+      let data = snapshot.val() || {};
+      let total = data.totalSaldo || 0;
 
-        // Bind saldo
-        db.ref("users/"+user.uid+"/saldo").on("value", snap=>{
-          const saldo = snap.val() || 0;
-          document.getElementById("saldoText").textContent = "Rp"+saldo.toLocaleString("id-ID");
-        });
-
-        // Riwayat WD
-        db.ref("withdrawals").orderByChild("userId").equalTo(user.uid).on("value", snap=>{
-          const list = document.getElementById("history");
-          list.innerHTML = "";
-          snap.forEach(child=>{
-            const wd = child.val();
-            const statusColor = wd.status==="done"?"text-emerald-400":wd.status==="rejected"?"text-rose-400":"text-yellow-400";
-            const item = `
-              <div class="glass p-3 rounded-xl flex justify-between items-center fade-in">
-                <div>
-                  <p class="font-medium">Rp${wd.amount.toLocaleString("id-ID")} – ${wd.method}</p>
-                  <p class="text-xs text-slate-400">${new Date(wd.createdAt).toLocaleString("id-ID")}</p>
-                </div>
-                <span class="${statusColor} font-semibold">${wd.status}</span>
-              </div>`;
-            list.innerHTML += item;
-          });
-        });
-
-        // Listen status WD milik user
-        db.ref("withdrawals").orderByChild("userId").equalTo(user.uid).on("child_changed", snap=>{
-          const wd = snap.val();
-          toast(`Status WD Rp${wd.amount.toLocaleString("id-ID")} → ${wd.status}`, wd.status==="done"?"success":"error");
-        });
-      } else {
-        currentUser = null;
-        document.getElementById("dash").classList.add("hidden");
-        document.getElementById("authCard").classList.remove("hidden");
+      if(amount < 30000) {
+        Swal.fire("⚠️ Minimal WD Rp30.000", "", "warning");
+        return;
       }
-    });
-
-    document.getElementById("btnLogin").onclick = ()=>{
-      const email = document.getElementById("email").value.trim();
-      const pass  = document.getElementById("password").value.trim();
-      auth.signInWithEmailAndPassword(email, pass)
-        .then(()=> toast("Login sukses","success"))
-        .catch(e=> toast(e.message,"error"));
-    };
-
-    // ================== Withdraw ==================
-    document.getElementById("btnWD").onclick = ()=>{
-      if(!currentUser){ toast("Harus login dulu!","error"); return; }
-
-      const amount = parseInt(document.getElementById("amount").value);
-      const method = document.getElementById("method").value;
-      const account= document.getElementById("account").value.trim();
-
-      if(isNaN(amount) || amount < 30000){
-        toast("Minimal Rp30.000","error"); return;
+      if(amount > total) {
+        Swal.fire("❌ Saldo tidak cukup", "", "error");
+        return;
       }
-      if(!account){ toast("Isi nomor e-wallet","error"); return; }
 
-      const saldoRef = db.ref("users/"+currentUser.uid+"/saldo");
-      saldoRef.transaction(saldo=>{
-        if((saldo||0) >= amount){
-          return (saldo||0) - amount;
-        } else {
-          toast("Saldo tidak cukup","error");
-          return;
-        }
-      }, (err, committed)=>{
-        if(err || !committed){ return; }
-        const wdRef = db.ref("withdrawals").push();
-        const wdData = {
-          userId: currentUser.uid,
-          amount,
-          method,
-          account,
-          createdAt: Date.now(),
-          status: "pending"
-        };
-        wdRef.set(wdData);
+      // potong saldo
+      db.ref("users/" + userId + "/totalSaldo").set(total - amount);
 
-        // Kirim ke Telegram Admin
-        const text = `📤 *Request WD Baru*\n\n👤 UserID: ${currentUser.uid}\n💰 Jumlah: Rp${amount.toLocaleString("id-ID")}\n🏦 Metode: ${method}\n🔢 Rekening: ${account}\n⏰ ${new Date().toLocaleString("id-ID")}`;
-        fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: "Markdown" })
-        });
-
-        toast("Request WD terkirim","success");
-        document.getElementById("amount").value = "";
-        document.getElementById("account").value = "";
+      // buat record WD
+      const wdId = db.ref().child("withdrawals").push().key;
+      db.ref("withdrawals/" + wdId).set({
+        userId: userId,
+        amount: amount,
+        method: method,
+        account: account,
+        createdAt: Date.now(),
+        status: "pending"
       });
-    };
-  </script>
+
+      Swal.fire({
+        icon: "success",
+        title: "✅ WD berhasil diajukan",
+        text: "Tunggu diproses admin",
+        showConfirmButton: false,
+        timer: 2000
+      });
+    });
+  }
+
+  // 📜 Riwayat WD user
+  function loadRiwayat() {
+    db.ref("withdrawals").orderByChild("userId").equalTo(userId).on("value", snap => {
+      const data = snap.val();
+      const ul = document.getElementById("riwayatWD");
+      ul.innerHTML = "";
+      if(!data) { ul.innerHTML = "<li>Belum ada data</li>"; return; }
+
+      Object.keys(data).reverse().forEach(id => {
+        let wd = data[id];
+        let statusColor = wd.status === "success" ? "lime" : (wd.status === "rejected" ? "red" : "orange");
+        ul.innerHTML += `<li>
+          Rp${wd.amount} - ${wd.method} (${wd.status})
+          <br><small style="color:${statusColor}">Status: ${wd.status}</small>
+        </li>`;
+      });
+    });
+  }
+
+  loadSaldo();
+  loadRiwayat();
+</script>
 </body>
 </html>
