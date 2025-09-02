@@ -4,83 +4,161 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>NusaTask • Withdraw</title>
+<meta name="theme-color" content="#0b0f17">
 <style>
   :root { color-scheme: dark; }
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,Arial,sans-serif;background:#0b0f17;color:#e8ecf1}
-  .wrap{max-width:560px;margin:24px auto;padding:16px}
-  .card{background:#111827;border:1px solid #1f2937;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-  .title{font-weight:700;font-size:22px;margin:0 0 4px}
-  .muted{color:#9ca3af;font-size:13px;margin:0 0 16px}
-  .saldo{font-size:18px;margin:8px 0 16px}
-  .row{display:grid;gap:10px}
-  input,select,button{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #334155;background:#0f172a;color:#e5e7eb;outline:none}
-  input::placeholder{color:#6b7280}
-  select{appearance:none}
-  button{cursor:pointer;background:#16a34a;border:none;font-weight:700;transition:.2s}
-  button:hover{filter:brightness(1.05)}
-  button[disabled]{background:#3f3f46;cursor:not-allowed;opacity:.7}
-  .list{margin:12px 0 0;display:grid;gap:8px}
-  .item{background:#0f172a;border:1px solid #1f2937;padding:12px;border-radius:12px;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .status{font-weight:700}
-  .pending{color:#fbbf24}.approved{color:#22c55e}.rejected{color:#ef4444}
-  .warn{background:#281a1a;border:1px solid #7f1d1d;color:#fecaca;padding:10px 12px;border-radius:10px;margin:-4px 0 12px;font-size:13px}
-  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#111827;border:1px solid #334155;padding:12px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.25s}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0b0f17;color:#e8ecf1}
+  a{color:#93c5fd;text-decoration:none}
+  .wrap{max-width:980px;margin:24px auto;padding:16px}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#22d3ee)}
+  h1{margin:0;font-size:22px;font-weight:800}
+  .muted{color:#94a3b8;font-size:13px}
+
+  .grid{display:grid;gap:16px}
+  @media(min-width:860px){ .grid{grid-template-columns:1fr 1fr} }
+
+  .card{background:#0f172a;border:1px solid #1f2937;border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .25s ease,box-shadow .25s ease}
+  .card:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(0,0,0,.35)}
+
+  .panel{display:none}
+  .line{height:1px;background:linear-gradient(90deg,transparent,#1f2937,transparent);margin:12px 0}
+
+  input,select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #334155;background:#0b1220;color:#e5e7eb;outline:none}
+  input:focus,select:focus{border-color:#60a5fa;box-shadow:0 0 0 4px rgba(96,165,250,.15)}
+  label{font-size:13px;color:#9ca3af;margin-bottom:6px;display:block}
+
+  .btn{padding:12px 14px;border-radius:12px;border:1px solid #2b3444;background:#162033;color:#e5e7eb;cursor:pointer;font-weight:600;transition:transform .05s ease,filter .2s}
+  .btn:active{transform:translateY(1px)}
+  .btn:hover{filter:brightness(1.08)}
+  .btn-primary{background:#2563eb;border-color:#1d4ed8}
+  .btn-danger{background:#7f1d1d;border-color:#6b1616}
+  .btn-ghost{background:#0b1220;border-color:#1f2937}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+
+  .balance{display:flex;align-items:end;gap:8px}
+  .balance .amount{font-size:28px;font-weight:900}
+  .badge{font-size:12px;padding:4px 8px;border-radius:999px;background:#0b1220;border:1px solid #1f2937;color:#9ca3af}
+
+  .list{display:grid;gap:10px}
+  .item{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#0b1220;border:1px solid #1f2937;padding:12px;border-radius:12px}
+  .status{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid}
+  .status-pending{border-color:#92400e;color:#fbbf24;background:rgba(146,64,14,.15)}
+  .status-approved{border-color:#14532d;color:#86efac;background:rgba(20,83,45,.15)}
+  .status-rejected{border-color:#7f1d1d;color:#fca5a5;background:rgba(127,29,29,.15)}
+
+  .auth{max-width:440px;margin:10vh auto}
+  .title{font-weight:800;font-size:20px;margin:0 0 6px}
+  .subtitle{font-size:13px;color:#94a3b8;margin-bottom:14px}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:#0f172a;border:1px solid #334155;padding:12px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.25s;z-index:60}
   .toast.show{opacity:1;pointer-events:auto}
-  .loader{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50}
-  .spinner{width:44px;height:44px;border-radius:999px;border:4px solid #334155;border-top-color:#60a5fa;animation:spin 1s linear infinite}
+
+  .loader{position:fixed;inset:0;background:rgba(3,6,12,.65);display:none;align-items:center;justify-content:center;backdrop-filter:saturate(120%) blur(4px);z-index:50}
+  .spinner{width:48px;height:48px;border-radius:999px;border:4px solid #334155;border-top-color:#60a5fa;animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-  .badge{background:#0f172a;border:1px solid #334155;color:#93c5fd;font-size:12px;padding:4px 8px;border-radius:999px}
+
+  .warn{padding:12px;border:1px dashed #7c2d12;border-radius:12px;background:rgba(124,45,18,.12);color:#f8ddb7}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .fade-in{animation:fade .35s ease both}@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
-      <div class="brand">
-        <div style="width:32px;height:32px;border-radius:10px;background:#0f172a;border:1px solid #334155;display:grid;place-items:center">💰</div>
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>NusaTask • Withdraw</h1>
+        <div class="muted">Tarik saldo e-wallet • Tema gelap elegan</div>
+      </div>
+    </div>
+
+    <!-- AUTH -->
+    <div id="auth" class="auth card fade-in">
+      <div class="title">Masuk akun</div>
+      <div class="subtitle">Gunakan email & password yang sama dengan bot earning agar saldo tersinkron.</div>
+      <div class="warn" style="margin-bottom:12px">Peringatan: 1 perangkat per pengguna. Akun yang terdeteksi curang (multi-device mencurigakan / emulator / manipulasi waktu) akan <b>dibekukan</b>.</div>
+      <div style="display:grid;gap:10px">
         <div>
-          <div class="title">Withdraw Saldo</div>
-          <p class="muted">Tarik penghasilanmu ke e-wallet (min Rp30.000)</p>
+          <label>Email</label>
+          <input id="email" type="email" placeholder="nama@email.com" autocomplete="email">
         </div>
-        <div style="margin-left:auto" class="badge">NusaTask</div>
+        <div>
+          <label>Password</label>
+          <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button id="btnLogin" class="btn btn-primary">Masuk</button>
+      </div>
+      <div class="muted" style="margin-top:10px">Belum punya akun? Silakan daftar di bot earning.</div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="app" class="panel fade-in">
+      <div class="topbar">
+        <div class="balance">
+          <span class="amount" id="saldoText">Rp0</span>
+          <span class="badge" id="uidShort">UID: -</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="btnRefresh" class="btn btn-ghost">↻ Refresh</button>
+          <button id="btnLogout" class="btn">Logout</button>
+        </div>
       </div>
 
-      <p id="saldo" class="saldo">Saldo: Rp0</p>
-      <div id="banNote" class="warn" style="display:none">⚠️ Akun kamu diblokir. Hubungi admin @nusataskproject</div>
+      <div class="grid">
+        <!-- Form WD -->
+        <div class="card">
+          <div class="title">Ajukan Withdraw</div>
+          <div class="subtitle">Minimal Rp30.000 • Saldo akan mengurangi sesuai nominal.</div>
+          <div class="line"></div>
+          <div style="display:grid;gap:10px">
+            <div>
+              <label>Metode E-Wallet</label>
+              <select id="method">
+                <option value="Dana">Dana</option>
+                <option value="OVO">OVO</option>
+                <option value="Gopay">Gopay</option>
+                <option value="ShopeePay">ShopeePay</option>
+              </select>
+            </div>
+            <div>
+              <label>Nomor E-Wallet</label>
+              <input id="number" inputmode="numeric" placeholder="08xxxxxxxxxx">
+            </div>
+            <div>
+              <label>Nominal (Rp)</label>
+              <input id="amount" inputmode="numeric" placeholder="30000">
+            </div>
+            <button id="btnSubmit" class="btn btn-primary">Kirim Pengajuan</button>
+          </div>
+          <div class="line"></div>
+          <div class="muted">Status pengajuan dapat dipantau pada Riwayat di samping.</div>
+        </div>
 
-      <!-- FORM WD -->
-      <form id="formWD" class="row" autocomplete="off">
-        <input type="number" id="nominal" placeholder="Nominal WD (min Rp30.000)" min="30000" required />
-        <select id="ewallet" required>
-          <option value="">Pilih E-Wallet</option>
-          <option value="Dana">Dana</option>
-          <option value="OVO">OVO</option>
-          <option value="Gopay">Gopay</option>
-          <option value="ShopeePay">ShopeePay</option>
-          <option value="Bank">Bank</option>
-        </select>
-        <input type="text" id="number" placeholder="Nomor e-wallet / rekening" required />
-        <button id="btnWD" type="submit">Ajukan WD</button>
-      </form>
-
-      <h3 style="margin:18px 0 8px;font-size:16px">📜 Riwayat WD</h3>
-      <div id="empty" class="muted">Belum ada riwayat.</div>
-      <div id="riwayat" class="list"></div>
+        <!-- Riwayat -->
+        <div class="card">
+          <div class="title">Riwayat Withdraw</div>
+          <div class="subtitle">Status realtime: pending • approved • rejected</div>
+          <div class="line"></div>
+          <div id="history" class="list"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- LOADER -->
+  <!-- Loader & Toast -->
   <div id="loader" class="loader"><div class="spinner"></div></div>
-  <!-- TOAST -->
-  <div id="toast" class="toast">Pesan</div>
+  <div id="toast" class="toast">Info</div>
 
-  <!-- Firebase -->
   <script type="module">
+    // ==== Firebase SDKs ====
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { getDatabase, ref, onValue, push, set, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { getDatabase, ref, child, get, onValue, push, set, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-    // ==== CONFIG (punyamu) ====
+    // ==== CONFIG ====
     const firebaseConfig = {
       apiKey: "AIzaSyCrFmaHbmL299cum51EtJIjt5NpukpTmho",
       authDomain: "penyimpanansaldo-280df.firebaseapp.com",
@@ -92,133 +170,209 @@
       measurementId: "G-L4TW7E23H2"
     };
 
+    // === Telegram Notif (ISI punyamu) ===
+    const TELEGRAM_BOT_TOKEN = "PASTE_YOUR_TOKEN";
+    const TELEGRAM_CHAT_ID   = "PASTE_CHAT_ID";
+
     // ==== INIT ====
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // ==== UI helpers ====
+    // ==== UI Helpers ====
     const $ = (s)=>document.querySelector(s);
-    const saldoEl = $("#saldo");
-    const banNote = $("#banNote");
-    const formWD = $("#formWD");
-    const btnWD = $("#btnWD");
-    const riwayatWrap = $("#riwayat");
-    const empty = $("#empty");
+    const authCard = $("#auth");
+    const appPanel = $("#app");
     const loader = $("#loader");
     const toast = $("#toast");
-    let currentSaldo = 0;
-    let userStatus = "active";
-    let uid = null;
+    const saldoText = $("#saldoText");
+    const uidShort = $("#uidShort");
+    const historyBox = $("#history");
+    const btnLogin = $("#btnLogin");
+    const btnLogout = $("#btnLogout");
+    const btnRefresh = $("#btnRefresh");
+    const btnSubmit = $("#btnSubmit");
 
-    function showToast(msg){
-      toast.textContent = msg;
-      toast.classList.add("show");
-      setTimeout(()=>toast.classList.remove("show"), 2200);
-    }
-    function setLoading(v){ loader.style.display = v ? "flex" : "none"; }
+    function setLoading(v){ loader.style.display = v ? "flex":"none"; }
+    function toastMsg(t){ toast.textContent=t; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"),2200); }
+    const rp = n => "Rp"+ Number(n||0).toLocaleString("id-ID");
 
-    // ==== AUTH ====
-    onAuthStateChanged(auth, user=>{
-      if(!user){
-        showToast("Silakan login dulu.");
-        // arahkan ke halaman login milikmu
-        location.replace("login.html");
+    // ==== Auth Flow ====
+    btnLogin?.addEventListener("click", async ()=>{
+      const email = ($("#email").value||"").trim();
+      const pass  = ($("#password").value||"").trim();
+      if(!email || !pass) return toastMsg("Isi email & password.");
+      try{
+        setLoading(true);
+        await signInWithEmailAndPassword(auth, email, pass);
+        toastMsg("Login sukses.");
+      }catch(e){ toastMsg("Login gagal: "+(e?.message||e)); }
+      finally{ setLoading(false); }
+    });
+
+    btnLogout?.addEventListener("click", async ()=>{
+      await signOut(auth);
+    });
+
+    onAuthStateChanged(auth, async (u)=>{
+      if(!u){
+        appPanel.style.display="none";
+        authCard.style.display="block";
         return;
       }
-      uid = user.uid;
+      // setelah login
+      authCard.style.display="none";
+      appPanel.style.display="block";
+      uidShort.textContent = "UID: "+ u.uid.slice(0,6)+"…";
 
-      // saldo realtime
-      onValue(ref(db, `users/${uid}`), (snap)=>{
-        const data = snap.val() || {};
-        currentSaldo = Number(data.saldo || 0);
-        userStatus = data.status || "active";
-        saldoEl.textContent = "Saldo: Rp" + currentSaldo.toLocaleString();
+      // cek banned
+      await guardBanned(u.uid);
 
-        if(userStatus === "banned"){
-          banNote.style.display = "block";
-          btnWD.disabled = true;
-        }else{
-          banNote.style.display = "none";
-          btnWD.disabled = false;
-        }
-      });
-
-      // riwayat WD user
-      onValue(ref(db, "withdrawals"), (snap)=>{
-        riwayatWrap.innerHTML = "";
-        let count = 0;
-        snap.forEach(ch=>{
-          const wd = ch.val();
-          if(wd.uid === uid){
-            count++;
-            const div = document.createElement("div");
-            div.className = "item";
-            const st = wd.status || "pending";
-            div.innerHTML = `
-              <div>Rp${Number(wd.nominal).toLocaleString()} • ${wd.ewallet} • ${wd.number}</div>
-              <div class="status ${st}">${st}</div>
-            `;
-            riwayatWrap.prepend(div);
-          }
-        });
-        empty.style.display = count ? "none":"block";
-      });
+      // tarik saldo + riwayat
+      attachRealtime(u.uid);
     });
 
-    // ==== AJUKAN WD ====
-    formWD.addEventListener("submit", async (e)=>{
-      e.preventDefault();
-      if(!uid) return;
-
-      const nominal = Number($("#nominal").value);
-      const ewallet = $("#ewallet").value.trim();
-      const number  = $("#number").value.trim();
-
-      if(userStatus === "banned"){ showToast("Akun diblokir."); return; }
-      if(!ewallet || !number || !nominal){ showToast("Lengkapi data WD."); return; }
-      if(nominal < 30000){ showToast("Minimal WD Rp30.000."); return; }
-
-      setLoading(true);
-      btnWD.disabled = true;
-
+    // ==== Anti-tuyul: banned gate ====
+    async function guardBanned(uid){
       try{
-        // Transaksi aman: cek saldo & kurangi atomically
-        const userRef = ref(db, `users/${uid}/saldo`);
-        const ok = await runTransaction(userRef, (saldo)=>{
-          saldo = Number(saldo || 0);
-          if(saldo >= nominal) return saldo - nominal;
-          return; // abort
-        });
+        const snap = await get(ref(db, "users/"+uid+"/status"));
+        const status = snap.exists()? snap.val() : "active";
+        if(status === "banned"){
+          toastMsg("Akun diblokir. Hubungi admin @nusataskproject");
+          await signOut(auth);
+          throw new Error("banned");
+        }
+      }catch(_){}
+    }
 
-        if(!ok.committed){
-          showToast("Saldo tidak cukup.");
-          btnWD.disabled = false;
-          setLoading(false);
+    // ==== Realtime saldo & riwayat ====
+    let offHistory = null, offSaldo = null;
+    function attachRealtime(uid){
+      // saldo
+      const saldoRef = ref(db, "users/"+uid+"/saldo");
+      onValue(saldoRef, (s)=>{
+        const v = s.exists()? s.val() : 0;
+        saldoText.textContent = rp(v);
+      });
+
+      // history WD milik user
+      const q = query(ref(db,"withdrawals"), orderByChild("uid"), equalTo(uid));
+      onValue(q, (snap)=>{
+        historyBox.innerHTML = "";
+        if(!snap.exists()){ historyBox.innerHTML = `<div class="muted">Belum ada pengajuan.</div>`; return; }
+        const items = [];
+        snap.forEach(ch=>{
+          const k = ch.key; const w = ch.val()||{};
+          items.push({id:k,...w});
+        });
+        // sort terbaru
+        items.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+        for(const it of items){
+          const st = (it.status||"pending").toLowerCase();
+          const cls = st==="approved"?"status status-approved": st==="rejected"?"status status-rejected":"status status-pending";
+          const el = document.createElement("div");
+          el.className="item";
+          el.innerHTML = `
+            <div>
+              <div><strong>${it.method}</strong> • ${it.number}</div>
+              <div class="muted">${new Date(it.createdAt||Date.now()).toLocaleString("id-ID")}</div>
+            </div>
+            <div style="text-align:right">
+              <div><strong>${rp(it.nominal)}</strong></div>
+              <div class="${cls}" style="margin-top:6px;text-transform:capitalize">${st}</div>
+            </div>
+          `;
+          historyBox.appendChild(el);
+        }
+      });
+    }
+
+    // ==== Refresh manual ====
+    btnRefresh?.addEventListener("click", ()=>{
+      const u = auth.currentUser;
+      if(!u) return;
+      attachRealtime(u.uid);
+      toastMsg("Disinkronkan.");
+    });
+
+    // ==== Kirim WD ====
+    btnSubmit?.addEventListener("click", async ()=>{
+      const u = auth.currentUser;
+      if(!u){ toastMsg("Sesi habis, silakan login ulang."); return; }
+
+      // cek status banned sebelum submit
+      try{
+        const stSnap = await get(ref(db, "users/"+u.uid+"/status"));
+        if(stSnap.exists() && stSnap.val()==="banned"){
+          toastMsg("Akun diblokir. Tidak bisa WD.");
           return;
         }
+      }catch(_){}
 
-        // Tulis WD baru
-        const wdRef = push(ref(db, "withdrawals"));
+      const method = $("#method").value;
+      const number = ($("#number").value||"").trim();
+      const amount = parseInt(($("#amount").value||"0").replace(/\D/g,""),10) || 0;
+
+      if(!number || number.length < 9) return toastMsg("Nomor e-wallet tidak valid.");
+      if(amount < 30000) return toastMsg("Minimal WD Rp30.000.");
+
+      setLoading(true);
+      try{
+        // cek saldo cukup
+        const saldoSnap = await get(ref(db,"users/"+u.uid+"/saldo"));
+        const saldoNow = saldoSnap.exists()? Number(saldoSnap.val()) : 0;
+        if(amount > saldoNow){ toastMsg("Saldo tidak cukup."); return; }
+
+        // buat WD
+        const createdAt = Date.now();
+        const wdRef = push(ref(db,"withdrawals"));
+        const wdId = wdRef.key;
+
+        // atomic set & potong saldo
         await set(wdRef, {
-          uid,
-          nominal,
-          ewallet,
-          number,
+          id: wdId,
+          uid: u.uid,
+          method, number,
+          nominal: amount,
           status: "pending",
-          timestamp: Date.now()
+          createdAt
         });
 
-        formWD.reset();
-        showToast("WD diajukan. Menunggu admin.");
-      }catch(err){
-        console.error(err);
-        showToast("Gagal mengajukan WD.");
+        await update(ref(db, "users/"+u.uid), {
+          saldo: saldoNow - amount,
+          email: u.email || null
+        });
+
+        toastMsg("Pengajuan WD terkirim.");
+
+        // kirim notifikasi Telegram (best-effort)
+        sendTelegramNotif(u.uid, amount, method, number);
+
+        // reset form
+        $("#amount").value=""; $("#number").value="";
+      }catch(e){
+        console.error(e);
+        toastMsg("Gagal mengirim WD.");
       }finally{
         setLoading(false);
-        btnWD.disabled = false;
       }
     });
+
+    function sendTelegramNotif(uid, amount, method, number){
+      if(!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+      const text =
+        `📢 *Withdraw Request*\n`+
+        `UID: \`${uid}\`\n`+
+        `Amount: Rp${Number(amount).toLocaleString("id-ID")}\n`+
+        `Method: ${method}\n`+
+        `Number: ${number}\n`+
+        `Time: ${new Date().toLocaleString("id-ID")}`;
+      fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode:"Markdown" })
+      }).catch(()=>{});
+    }
   </script>
 </body>
 </html>
